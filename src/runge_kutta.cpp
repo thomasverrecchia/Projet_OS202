@@ -1,6 +1,7 @@
 #include <iostream>
 #include "runge_kutta.hpp"
 #include "cartesian_grid_of_speed.hpp"
+#include <omp.h> 
 using namespace Geometry;
 
 Geometry::CloudOfPoints
@@ -12,8 +13,7 @@ Numeric::solve_RK4_fixed_vortices( double dt, CartesianGridOfSpeed const& t_velo
 
     Geometry::CloudOfPoints newCloud(t_points.numberOfPoints());
     // On ne bouge que les points :
-
-    #pragma omp parallel for
+    #pragma omp parallel for // ajout de la directive OpenMP
     for ( std::size_t iPoint=0; iPoint<t_points.numberOfPoints(); ++iPoint)
     {
         point  p = t_points[iPoint];
@@ -43,8 +43,8 @@ Numeric::solve_RK4_movable_vortices( double dt, CartesianGridOfSpeed& t_velocity
 
     Geometry::CloudOfPoints newCloud(t_points.numberOfPoints());
     // On ne bouge que les points :
-    
-    
+
+    #pragma omp parallel for 
     for ( std::size_t iPoint=0; iPoint<t_points.numberOfPoints(); ++iPoint)
     {
         point  p = t_points[iPoint];
@@ -62,7 +62,11 @@ Numeric::solve_RK4_movable_vortices( double dt, CartesianGridOfSpeed& t_velocity
     }
     std::vector<point> newVortexCenter;
     newVortexCenter.reserve(t_vortices.numberOfVortices());
-     
+
+    /* 
+    La boucle suivante n'est pas parallélisable avec openMP car elle utilise la méthode computeSpeed de la classe
+    vortex. Cette méthode comprend une boucle dont les itérations ne sont pas indépendantes.    
+    */
     for (std::size_t iVortex=0; iVortex<t_vortices.numberOfVortices(); ++iVortex)
     {
         point p = t_vortices.getCenter(iVortex);
@@ -78,13 +82,15 @@ Numeric::solve_RK4_movable_vortices( double dt, CartesianGridOfSpeed& t_velocity
         vector v4 = t_vortices.computeSpeed(p3);
         newVortexCenter.emplace_back(t_velocity.updatePosition(p + onesixth*dt*(v1+2.*v2+2.*v3+v4)));
     }
-    
-    
+
+    #pragma omp parallel for 
     for (std::size_t iVortex=0; iVortex<t_vortices.numberOfVortices(); ++iVortex)
     {
         t_vortices.setVortex(iVortex, newVortexCenter[iVortex], 
                              t_vortices.getIntensity(iVortex));
     }
+
+    
     t_velocity.updateVelocityField(t_vortices);
     return newCloud;
 

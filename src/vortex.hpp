@@ -70,6 +70,15 @@ namespace Simulation
 
         vector computeSpeed( point const& a_point ) const;
 
+        double* data()
+        {
+            return (double*) m_centers_and_intensities.data();
+        }
+        double const* data() const
+        {
+            return (double*) m_centers_and_intensities.data();
+        }
+
         Vortices& operator = ( Vortices const& ) = default;
         Vortices& operator = ( Vortices     && ) = default;
     private:

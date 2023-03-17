@@ -4,7 +4,7 @@ include make_linux.inc
 
 
 ALL= vortexSimulation.exe
-CXX = mpicxx
+
 
 default:	help
 all: $(ALL)

@@ -207,20 +207,20 @@ int main(int nargs, char *argv[]) {
           advance = true;
         
         }
-         if (flag == 1){
+         if (input == 1){
             MPI_Send(&input, 1, MPI_INT, 1, 3, commGlob);
         }
-        if(flag == 3 || flag == 4){
+        if(input == 3 || input == 4){
             for (int ind_p = 1; ind_p < size; ind_p++) {
-            MPI_Send(&dt, 1, MPI_DOUBLE, ind_p, 76, commGlob);
+              MPI_Send(&dt, 1, MPI_DOUBLE, ind_p, 76, commGlob);
             }
         }
-        if(flag == 5){
+        if(input == 5){
             MPI_Send(&advance, 1, MPI_LOGICAL, 1, 89, commGlob);
         }
     
 
-      receive_data = animate | advance;
+      receive_data = animate || advance;
 
       if (receive_data) {
 
@@ -230,7 +230,7 @@ int main(int nargs, char *argv[]) {
           gridVect.push_back(grid[i].y);
         }
 
-        // On récupère les données calculées par les autres processeurs.
+        // On récupère les données calculées par les processeurs.
         for (int i = 1; i < size; ++i) {
           MPI_Isend(&gridVect[0], grid.size() * 2, MPI_DOUBLE, i, 11, commGlob,
                     &req);
@@ -239,13 +239,13 @@ int main(int nargs, char *argv[]) {
 
         partialDataVect.clear();
         partialDataVect.resize(sizeBuffers * 2);
-        for (int iProc = 1; iProc < size - 1; ++iProc) {
+        for (int ind_p = 1; ind_p < size - 1; ind_p++) {
 
-          MPI_Recv(&partialDataVect[0], sizeBuffers * 2, MPI_DOUBLE, iProc, 10,
+          MPI_Recv(&partialDataVect[0], sizeBuffers * 2, MPI_DOUBLE, ind_p, 10,
                    commGlob, MPI_STATUS_IGNORE);
 
-          for (int ind_p = 0; ind_p < sizeBuffers; ind_p++) {
-            int p = (ind_p - 1) * sizeBuffers + ind_p;
+          for (int ind_pt = 0; ind_pt < sizeBuffers; ind_pt++) {
+            int p = (ind_p - 1) * sizeBuffers + ind_pt;
 
             cloud[p].x = partialDataVect[2 * ind_p];
             cloud[p].y = partialDataVect[2 * ind_p + 1];
@@ -256,8 +256,8 @@ int main(int nargs, char *argv[]) {
         MPI_Recv(&partialDataVect[0], sizeLastBuffers * 2, MPI_DOUBLE, size - 1,
                  10, commGlob, MPI_STATUS_IGNORE);
 
-        for (int ind_p = 0; ind_p < sizeLastBuffers; ind_p++) {
-          int p = (size - 2) * sizeBuffers + ind_p++;
+        for (int ind_pt = 0; ind_pt < sizeLastBuffers; ind_pt++) {
+          int p = (size - 2) * sizeBuffers + ind_pt;
 
           cloud[p].x = partialDataVect[2 * ind_p];
           cloud[p].y = partialDataVect[2 * ind_p + 1];
@@ -289,8 +289,8 @@ int main(int nargs, char *argv[]) {
     partialDataVect.resize(sizeLastBuffers * 2);
 
     Geometry::CloudOfPoints partialCloud(sizeLastBuffers);
-    for (int iPoint = 0; iPoint < sizeLastBuffers; ++iPoint) {
-      partialCloud[iPoint] = cloud[sizeBuffers * (rank - 1) + iPoint];
+    for (int ind_pt = 0; ind_pt < sizeLastBuffers; ind_pt++) {
+      partialCloud[ind_pt] = cloud[sizeBuffers * (rank - 1) + ind_pt];
     }
 
     while (isRunning) {
@@ -331,8 +331,8 @@ int main(int nargs, char *argv[]) {
   } else {
 
     Geometry::CloudOfPoints partialCloud(sizeBuffers);
-    for (int iPoint = 0; iPoint < sizeBuffers; ++iPoint) {
-      partialCloud[iPoint] = cloud[sizeBuffers * (rank - 1) + iPoint];
+    for (int ind_pt = 0; ind_pt < sizeBuffers; ind_pt++) {
+      partialCloud[ind_pt] = cloud[sizeBuffers * (rank - 1) + ind_pt];
     }
 
     while (isRunning) {
